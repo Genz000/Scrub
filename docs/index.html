@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrub — remove metadata from photos and video</title>
+<meta name="description" content="Strip EXIF, GPS and author metadata from images and video. Runs entirely in your browser — files are never uploaded.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🧼</text></svg>">
+</head>
+<body>
+
+<header class="top">
+  <h1>Scrub</h1>
+  <p class="lede">
+    Removes EXIF, GPS, camera and author metadata from photos and video.
+  </p>
+  <p class="assurance">
+    <span class="dot"></span>
+    Everything happens inside this browser tab. Your files are never uploaded anywhere —
+    there is no server to upload them to.
+  </p>
+</header>
+
+<main>
+  <section>
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose files">
+      <strong>Drop photos or videos here</strong>
+      <span>or click to choose — JPEG, PNG, WebP, MP4 and MOV</span>
+      <input id="file-input" type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.m4v,image/*,video/*">
+    </div>
+  </section>
+
+  <section id="results" class="results" hidden>
+    <div class="results-head">
+      <h2>Files</h2>
+      <div class="results-actions">
+        <button id="clean-all" class="primary">Strip all</button>
+        <button id="clear-all" class="ghost">Clear</button>
+      </div>
+    </div>
+    <ul id="list" class="list"></ul>
+  </section>
+
+  <footer class="foot">
+    <h2>What this can and cannot do</h2>
+    <p>
+      Nothing here is re-encoded, so image and video quality is never touched. JPEG, PNG and
+      WebP files are rebuilt from their image data alone. MP4 and MOV files have their
+      metadata boxes overwritten in place with padding, because the video's sample table
+      points at absolute byte positions — shifting them would break playback. The file size
+      therefore stays the same for video, while the metadata itself is genuinely gone.
+    </p>
+    <p>
+      Metadata is not the only way a file identifies its source. Watermarks, a platform's own
+      re-encoding fingerprints and the visible content all survive stripping. What this
+      removes is the embedded tags — the part that quietly carries your location, device and
+      name.
+    </p>
+    <p>
+      Need HEIC, MKV, AVI, or want to pull a video straight from a Facebook or Instagram
+      link? That needs ffmpeg and yt-dlp, which cannot run in a browser tab. The
+      <a href="https://github.com/Genz000/scrub">local version on GitHub</a> does all of it.
+    </p>
+  </footer>
+</main>
+
+<template id="card-tpl">
+  <li class="card">
+    <div class="card-head">
+      <div class="card-id">
+        <span class="badge"></span>
+        <div class="card-text">
+          <p class="name"></p>
+          <p class="sub"></p>
+        </div>
+      </div>
+      <div class="card-actions"></div>
+    </div>
+    <div class="meta"></div>
+  </li>
+</template>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

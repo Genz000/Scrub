@@ -3,6 +3,14 @@
 Strips metadata from images and video. Runs entirely on your own machine — nothing is
 uploaded anywhere, and the only outbound connection is the one that fetches a link you paste.
 
+## Use it right now → [genz000.github.io/scrub](https://genz000.github.io/scrub/)
+
+That page runs the whole thing inside your browser tab. No install, no upload, no server —
+drop a photo or video in and download it clean. It handles JPEG, PNG, WebP, MP4 and MOV.
+
+The full version below adds what a browser tab cannot do: pulling a video straight from a
+link, plus HEIC, MKV, AVI and everything else ffmpeg reads.
+
 ## Setup
 
 Node 18 or newer. There is nothing to install system-wide — ffmpeg and yt-dlp both arrive as
@@ -71,6 +79,15 @@ the embedded tags, which is the part that leaks your location, device and name.
 - `lib/exif.js` — TIFF/EXIF reader, including GPS coordinate conversion
 - `lib/meta.js` — inspects a file and reports what it carries
 - `lib/strip.js` — the removal logic
-- `public/` — the interface
+- `public/` — the interface for the local app
+- `docs/` — the browser-only build published to GitHub Pages
+
+`docs/` deliberately shares no code with `lib/`. The local version works on Node buffers and
+shells out to ffmpeg; the browser version works on `Uint8Array` and implements the MP4
+container rewriting itself, since ffmpeg cannot run in a tab.
+
+Both were checked the same way: strip the fixtures, confirm with `ffprobe` that no tags
+remain, and confirm the cleaned JPEG and PNG decode to pixel-identical output while the
+cleaned MP4's video and audio streams keep the same MD5 as the original.
 
 Working files land in `work/` and are wiped by the Clear button.
