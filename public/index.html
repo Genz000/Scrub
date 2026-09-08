@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrub — strip metadata from images and video</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>Scrub</h1>
+  <p>Removes EXIF, GPS, device and author metadata from images and video. Everything happens on this machine.</p>
+</header>
+
+<main>
+  <section class="panel">
+    <label class="label" for="url">Paste a link</label>
+    <form id="link-form" class="row">
+      <input id="url" type="url" placeholder="https://www.facebook.com/..." autocomplete="off" spellcheck="false">
+      <button type="submit" id="fetch-btn">Fetch</button>
+    </form>
+    <details class="advanced">
+      <summary>Video is private or login-only?</summary>
+      <label class="cookie-row">
+        Use cookies from
+        <select id="cookies-from">
+          <option value="">don't use cookies</option>
+          <option value="chrome">Chrome</option>
+          <option value="edge">Edge</option>
+          <option value="firefox">Firefox</option>
+          <option value="brave">Brave</option>
+        </select>
+      </label>
+      <p class="hint">Reads your existing browser session so yt-dlp can see what you can see. Close the browser first, or it may refuse to read the cookie file.</p>
+    </details>
+    <div id="fetch-status" class="status" hidden></div>
+  </section>
+
+  <div class="or"><span>or</span></div>
+
+  <section class="panel">
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose files">
+      <strong>Drop images or videos here</strong>
+      <span>or click to choose — JPEG, PNG, HEIC, MP4, MOV, MKV and more</span>
+      <input id="file-input" type="file" multiple hidden
+             accept="image/*,video/*">
+    </div>
+  </section>
+
+  <section id="results" class="results" hidden>
+    <div class="results-head">
+      <h2>Files</h2>
+      <div class="results-actions">
+        <button id="clean-all" class="primary">Strip all</button>
+        <button id="clear-all" class="ghost">Clear</button>
+      </div>
+    </div>
+    <ul id="list" class="list"></ul>
+  </section>
+</main>
+
+<template id="card-tpl">
+  <li class="card">
+    <div class="card-head">
+      <div class="card-id">
+        <span class="badge"></span>
+        <div>
+          <p class="name"></p>
+          <p class="sub"></p>
+        </div>
+      </div>
+      <div class="card-actions"></div>
+    </div>
+    <div class="meta"></div>
+  </li>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
