@@ -49,6 +49,29 @@ can see. Close the browser first; Chrome locks its cookie database while running
 Either way you see what the file currently carries — GPS coordinates, camera make and model,
 serial numbers, software, author, timestamps — then hit Strip and download the clean copy.
 
+## If a link fails with a certificate error
+
+Antivirus suites with HTTPS scanning — Avast, AVG, Kaspersky, ESET — and most corporate
+proxies intercept every HTTPS connection and re-sign it with their own root certificate.
+Windows trusts that root, so browsers notice nothing, but yt-dlp ships its own certificate
+list and correctly refuses a chain it cannot verify:
+
+```
+curl: (60) SSL certificate ... unable to get local issuer certificate
+```
+
+Scrub handles this on its own. At startup it exports the Windows trust store to
+`certs/windows-roots.pem` and points yt-dlp at it, so yt-dlp trusts exactly what the system
+trusts. Certificate verification stays on — `--no-check-certificates` is never used, since
+that would accept any certificate at all on a connection already being intercepted.
+
+Two separate pieces are needed, because yt-dlp uses two different network stacks: the
+exported bundle (through `CURL_CA_BUNDLE`) covers the page fetch, and `--compat-options
+no-certifi` makes the media download read the system store rather than the bundled
+`certifi` list.
+
+The bundle is refreshed weekly, and regenerating it is just deleting `certs/`.
+
 ## How the stripping works
 
 Nothing is re-encoded, so quality is never touched.

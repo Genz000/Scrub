@@ -6,8 +6,10 @@ import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import ffmpegPath from 'ffmpeg-static';
 import { inspect, kindOf } from './lib/meta.js';
 import { strip } from './lib/strip.js';
+import { systemCaBundle, caEnv } from './lib/cacerts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORK = path.join(__dirname, 'work');
@@ -18,6 +20,10 @@ const YTDLP = path.join(
 const PORT = 5320;
 
 await fs.mkdir(WORK, { recursive: true });
+
+// Resolved once at startup so the first paste is not slowed by exporting certificates.
+const CA_BUNDLE = await systemCaBundle(__dirname);
+const YTDLP_ENV = { ...process.env, ...caEnv(CA_BUNDLE) };
 
 const items = new Map();   // id -> file record
 const jobs = new Map();    // jobId -> { events, done, listeners }
@@ -81,6 +87,34 @@ app.post('/api/upload', upload.array('files', 40), async (req, res) => {
 
 // --- Link download (yt-dlp), progress streamed over SSE ---------------------
 
+// yt-dlp's own errors run to several lines of stack-trace and issue-tracker links.
+// Turn the ones that have a real remedy into a sentence that names it.
+function friendlyError(stderr, exitCode) {
+  const text = String(stderr).replace(/\s+/g, ' ').trim();
+
+  if (/certificate|CertificateVerify|SSL/i.test(text)) {
+    return CA_BUNDLE
+      ? 'The site\'s certificate could not be verified, even using the Windows trust store. '
+        + 'If you use antivirus HTTPS scanning (Avast, Kaspersky, ESET), try turning that '
+        + 'feature off and retrying.'
+      : 'The site\'s certificate could not be verified. This usually means antivirus or a '
+        + 'proxy is intercepting HTTPS. Restart Scrub so it can load the system certificates.';
+  }
+  if (/login required|not logged|rate-limit reached|requested content is not available|account.*private/i.test(text)) {
+    return 'This video is not public. Open "Video is private or login-only?" above and pick '
+      + 'the browser you are signed in with, then try again.';
+  }
+  if (/Unsupported URL/i.test(text)) {
+    return 'That link is not one yt-dlp recognises. Try the direct URL of the post itself.';
+  }
+  if (/Video unavailable|has been removed|does not exist/i.test(text)) {
+    return 'The video is unavailable — it may have been removed or made private.';
+  }
+
+  const last = String(stderr).split('\n').map((l) => l.trim()).filter(Boolean).pop();
+  return last ? last.replace(/^ERROR:\s*/, '') : `yt-dlp exited with code ${exitCode}`;
+}
+
 function emit(job, event) {
   job.events.push(event);
   for (const send of job.listeners) send(event);
@@ -107,10 +141,16 @@ app.post('/api/fetch', (req, res) => {
     '--no-warnings',
     '-f', 'bv*+ba/b',
     '--merge-output-format', 'mp4',
+    // Sites that serve video and audio separately need ffmpeg to join them, and it is
+    // not on PATH here — it comes from the ffmpeg-static package.
+    '--ffmpeg-location', ffmpegPath,
+    // yt-dlp bundles its own certifi list and prefers it over SSL_CERT_FILE. This makes
+    // the media download trust the operating system's store, the way a browser does.
+    '--compat-options', 'no-certifi',
   ];
   if (req.body?.cookiesFrom) args.push('--cookies-from-browser', String(req.body.cookiesFrom));
 
-  const child = spawn(YTDLP, args, { windowsHide: true });
+  const child = spawn(YTDLP, args, { windowsHide: true, env: YTDLP_ENV });
   let stderr = '';
 
   child.stdout.on('data', (chunk) => {
@@ -129,7 +169,8 @@ app.post('/api/fetch', (req, res) => {
   child.on('close', async (code) => {
     try {
       if (code !== 0) {
-        throw new Error(stderr.split('\n').filter(Boolean).pop() || `yt-dlp exited with code ${code}`);
+        console.error(`[yt-dlp exit ${code}]`, stderr.trim());
+        throw new Error(friendlyError(stderr, code));
       }
       const files = (await fs.readdir(dir)).filter((f) => !f.endsWith('.part'));
       if (!files.length) throw new Error('Nothing was downloaded.');
