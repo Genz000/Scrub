@@ -3,7 +3,7 @@
 Strips metadata from images and video. Runs entirely on your own machine — nothing is
 uploaded anywhere, and the only outbound connection is the one that fetches a link you paste.
 
-## Use it right now → [genz000.github.io/scrub](https://genz000.github.io/scrub/)
+## Use it right now → [genz000.github.io/Scrub](https://genz000.github.io/Scrub/)
 
 That page runs the whole thing inside your browser tab. No install, no upload, no server —
 drop a photo or video in and download it clean. It handles JPEG, PNG, WebP, MP4 and MOV.
